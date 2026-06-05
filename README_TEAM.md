@@ -1,7 +1,7 @@
 # Team: Redouane Ndiaye & Ines [Lastname]
 
 **DAG id:** `team_redouanes`  
-**Git repo:** `https://github.com/...` — **also on your Moodle slides** (title or architecture)  
+**Git repo:** `https://github.com/Ineshjz/bigdata_capstone` — **also on your Moodle slides** (title or architecture)  
 **Spark module:** `include/team_redouanes_spark.py`  
 **Course:** Big Data Processing - Lab 4 Capstone
 
