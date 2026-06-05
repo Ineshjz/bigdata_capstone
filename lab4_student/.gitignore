@@ -1,0 +1,16 @@
+.env
+logs/
+data/incoming/*
+data/raw/*
+data/curated/*
+data/reports/*
+data/reference/*
+!data/incoming/.gitkeep
+!data/raw/.gitkeep
+!data/curated/.gitkeep
+!data/reports/.gitkeep
+!data/reference/.gitkeep
+__pycache__/
+*.pyc
+.idea/
+.vscode/
