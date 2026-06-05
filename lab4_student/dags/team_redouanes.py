@@ -1,0 +1,88 @@
+"""
+Lab 4 Capstone DAG — team_redouanes
+Retail KPI pipeline: vendor CSV -> Silver (DuckDB) -> validate -> Gold (PySpark) -> publish
+"""
+
+from __future__ import annotations
+
+from datetime import datetime, timedelta
+
+from airflow import DAG
+from airflow.decorators import task
+from airflow.sensors.filesystem import FileSensor
+
+from include.ingest import ingest_day, validate_silver
+from include.paths import report_json
+from include.team_redouanes_spark import run_daily
+
+DEFAULT_ARGS = {
+    "owner": "team_redouanes",
+    "retries": 2,
+    "retry_delay": timedelta(minutes=3),
+}
+
+with DAG(
+    dag_id="team_redouanes",
+    description="Capstone retail KPI pipeline — team redouanes",
+    start_date=datetime(2026, 6, 1),
+    end_date=datetime(2026, 6, 14),
+    schedule="@daily",
+    catchup=False,
+    default_args=DEFAULT_ARGS,
+    tags=["lab4", "capstone"],
+) as dag:
+    # ------------------------------------------------------------------
+    # Task 1 — Attente du fichier CSV déposé par le vendeur
+    # ------------------------------------------------------------------
+    wait_csv = FileSensor(
+        task_id="wait_for_vendor_csv",
+        filepath="/opt/airflow/data/incoming/transactions_{{ ds }}.csv",
+        poke_interval=30,
+        timeout=60 * 10,
+        mode="reschedule",
+    )
+
+    # ------------------------------------------------------------------
+    # Task 2 — Ingestion Bronze -> Silver (DuckDB, fourni)
+    # ------------------------------------------------------------------
+    @task
+    def ingest(ds: str) -> dict:
+        """Read daily CSV and write idempotent Silver Parquet via DuckDB."""
+        return ingest_day(ds)
+
+    # ------------------------------------------------------------------
+    # Task 3 — Validation du Silver (échoue visiblement si --corrupt)
+    # ------------------------------------------------------------------
+    @task
+    def validate(ds: str) -> dict:
+        """Raise if Silver layer is corrupt: blocks Spark from running on bad data."""
+        return validate_silver(ds)
+
+    # ------------------------------------------------------------------
+    # Task 4 — Calcul des KPIs (PySpark) : Gold Parquet + dashboard JSON
+    # ------------------------------------------------------------------
+    @task
+    def run_spark(ds: str) -> dict:
+        """Run the 3 Spark transforms; write curated Parquet and dashboard JSON."""
+        return run_daily(ds)
+
+    # ------------------------------------------------------------------
+    # Task 5 — Publication : vérifie que le rapport JSON existe
+    # ------------------------------------------------------------------
+    @task
+    def publish(ds: str) -> dict:
+        """Confirm the dashboard JSON was produced; expose its path in the logs."""
+        path = report_json(ds)
+        if not path.exists():
+            raise FileNotFoundError(f"Report not found: {path}")
+        return {"report_path": str(path), "status": "ready"}
+
+    # ------------------------------------------------------------------
+    # Dépendances linéaires
+    # ------------------------------------------------------------------
+    ingested = ingest()
+    validated = validate()
+    sparked = run_spark()
+    published = publish()
+
+    wait_csv >> ingested >> validated >> sparked >> published
