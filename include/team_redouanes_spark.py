@@ -138,14 +138,34 @@ def run_daily(logical_date: str, *, with_reference: bool = False) -> dict:
             F.sum("transaction_count").alias("total_transactions"),
         ).collect()[0]
 
-        # --- Écriture JSON de rapport (idempotence : réécriture simple) ---
+        # --- Collecte des KPIs par catégorie pour le JSON ---
+        kpis_by_category = (
+            df_kpis.groupBy("category")
+            .agg(
+                F.round(F.sum("total_revenue_eur"), 2).alias("revenue_eur"),
+                F.sum("transaction_count").alias("transactions"),
+            )
+            .orderBy("category")
+            .collect()
+        )
+
+        # --- Écriture JSON de rapport enrichi ---
         report = {
             "logical_date": logical_date,
             "status": "ok",
             "grand_total_eur": float(totals["grand_total_eur"]),
             "total_transactions": int(totals["total_transactions"]),
             "curated_path": str(out_parquet),
+            "kpis_by_category": [
+                {
+                    "category": row["category"],
+                    "revenue_eur": float(row["revenue_eur"]),
+                    "transactions": int(row["transactions"]),
+                }
+                for row in kpis_by_category
+            ],
         }
+
         out_json = report_json(logical_date)
         out_json.parent.mkdir(parents=True, exist_ok=True)
         out_json.write_text(json.dumps(report, indent=2))
