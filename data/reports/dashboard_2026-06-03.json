@@ -1,0 +1,44 @@
+{
+  "logical_date": "2026-06-03",
+  "status": "ok",
+  "grand_total_eur": 23741.45,
+  "total_transactions": 200,
+  "curated_path": "/opt/airflow/data/curated/dt=2026-06-03/kpis_by_category_country.parquet",
+  "kpis_by_category": [
+    {
+      "category": "books",
+      "revenue_eur": 4764.51,
+      "transactions": 38
+    },
+    {
+      "category": "electronics",
+      "revenue_eur": 2407.56,
+      "transactions": 23
+    },
+    {
+      "category": "fashion",
+      "revenue_eur": 3344.72,
+      "transactions": 25
+    },
+    {
+      "category": "groceries",
+      "revenue_eur": 4054.26,
+      "transactions": 32
+    },
+    {
+      "category": "home",
+      "revenue_eur": 2927.33,
+      "transactions": 26
+    },
+    {
+      "category": "sports",
+      "revenue_eur": 2707.53,
+      "transactions": 24
+    },
+    {
+      "category": "toys",
+      "revenue_eur": 3535.54,
+      "transactions": 32
+    }
+  ]
+}
